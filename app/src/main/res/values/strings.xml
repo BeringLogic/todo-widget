@@ -20,5 +20,6 @@
     <string name="last_updated_error">Error: %1$s</string>
     <string name="todo_status">Todo status</string>
     <string name="loading">Loading tasks…</string>
+    <string name="refreshing">Refreshing…</string>
     <string name="refresh">Refresh</string>
 </resources>

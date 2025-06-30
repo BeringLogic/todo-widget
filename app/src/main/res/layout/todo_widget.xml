@@ -7,16 +7,34 @@
     android:background="#FFFFFF"
     android:padding="8dp">
 
-    <!-- Title -->
-    <TextView
-        android:id="@+id/widget_title"
+    <!-- Header with title and refresh button -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/this_week_tasks"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="#2196F3"
-        android:padding="8dp"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/this_week_tasks"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#2196F3"
+            android:padding="8dp"/>
+
+        <ImageButton
+            android:id="@+id/refresh_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/refresh"
+            android:padding="12dp"
+            android:src="@android:drawable/ic_popup_sync"
+            android:tint="#2196F3"/>
+    </LinearLayout>
 
     <!-- Content -->
     <TextView

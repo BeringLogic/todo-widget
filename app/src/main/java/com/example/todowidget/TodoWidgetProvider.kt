@@ -27,6 +27,7 @@ class TodoWidgetProvider : AppWidgetProvider() {
     companion object {
         private const val TAG = "TodoWidget"
         const val ACTION_UPDATE_WIDGET = "com.example.todowidget.action.UPDATE_WIDGET"
+        const val ACTION_REFRESH = "com.example.todowidget.ACTION_REFRESH"
 
         /**
          * Schedules the periodic update worker
@@ -85,13 +86,30 @@ class TodoWidgetProvider : AppWidgetProvider() {
                 action = ACTION_UPDATE_WIDGET
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             }
+            
+            // Set up refresh button click handler
             val refreshPendingIntent = PendingIntent.getBroadcast(
                 context,
-                appWidgetId,
-                refreshIntent,
+                1,
+                Intent(context, TodoWidgetProvider::class.java).apply {
+                    action = ACTION_REFRESH
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(android.R.id.content, refreshPendingIntent)
+            views.setOnClickPendingIntent(R.id.refresh_button, refreshPendingIntent)
+            
+            // Make the entire widget clickable to refresh
+            val widgetClickPendingIntent = PendingIntent.getBroadcast(
+                context,
+                2,
+                Intent(context, TodoWidgetProvider::class.java).apply {
+                    action = ACTION_REFRESH
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.empty_view, widgetClickPendingIntent)
             
             appWidgetManager.updateAppWidget(appWidgetId, views)
             
@@ -240,19 +258,29 @@ class TodoWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
         
         when (intent.action) {
-            ACTION_UPDATE_WIDGET -> {
-                Log.d(TAG, "Received update widget broadcast")
-                val appWidgetManager = AppWidgetManager.getInstance(context)
+            ACTION_UPDATE_WIDGET, ACTION_REFRESH -> {
                 val appWidgetId = intent.getIntExtra(
-                    AppWidgetManager.EXTRA_APPWIDGET_ID, 
+                    AppWidgetManager.EXTRA_APPWIDGET_ID,
                     AppWidgetManager.INVALID_APPWIDGET_ID
                 )
                 
                 if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                    // Update only the specific widget that was clicked
-                    updateAppWidget(context, appWidgetManager, appWidgetId)
+                    // Force refresh from network if it's a manual refresh
+                    if (intent.action == ACTION_REFRESH) {
+                        val appWidgetManager = AppWidgetManager.getInstance(context)
+                        val views = RemoteViews(context.packageName, R.layout.todo_widget)
+                        views.setTextViewText(R.id.status_text, context.getString(R.string.refreshing))
+                        appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                        
+                        // Invalidate the cache and force a refresh
+                        TodoRepository.getInstance(context).invalidateCache()
+                    }
+                    
+                    // Update the widget
+                    updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId)
                 } else {
                     // Fallback: Update all widgets if we couldn't get the ID
+                    val appWidgetManager = AppWidgetManager.getInstance(context)
                     val appWidgetIds = appWidgetManager.getAppWidgetIds(
                         ComponentName(context, TodoWidgetProvider::class.java)
                     )

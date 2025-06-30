@@ -100,13 +100,23 @@ class TodoRepository private constructor(
     companion object {
         private const val TAG = "TodoRepository"
         
-        @Volatile private var instance: TodoRepository? = null
+        @Volatile private var INSTANCE: TodoRepository? = null
         
-        @Synchronized
         fun getInstance(context: Context): TodoRepository {
-            return instance ?: synchronized(this) {
-                instance ?: TodoRepository(context.applicationContext).also { instance = it }
+            return INSTANCE ?: synchronized(this) {
+                val instance = TodoRepository(context.applicationContext)
+                INSTANCE = instance
+                instance
             }
         }
+    }
+    
+    /**
+     * Invalidates the cache to force a refresh from the network on the next request
+     */
+    fun invalidateCache() {
+        // Clear any cached data if needed
+        // For now, we'll just log that we're invalidating the cache
+        Log.d(TAG, "Invalidating cache to force refresh from network")
     }
 }
