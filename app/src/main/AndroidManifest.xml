@@ -36,22 +36,27 @@
         <!-- Widget Provider -->
         <receiver
             android:name=".TodoWidgetProvider"
-            android:exported="true"
-            android:label="@string/this_week_tasks">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="${applicationId}.ACTION_UPDATE_WIDGET" />
+                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE_OPTIONS" />
             </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/todo_widget_info" />
         </receiver>
-
+        
         <!-- RemoteViewsService for the collection -->
         <service
             android:name=".TodoWidgetService"
             android:exported="false"
-            android:permission="android.permission.BIND_REMOTEVIEWS" />
+            android:permission="android.permission.BIND_REMOTEVIEWS">
+            <intent-filter>
+                <action android:name="android.widget.RemoteViewsService" />
+            </intent-filter>
+        </service>
 
 <!-- Boot Completed Receiver -->
         <receiver

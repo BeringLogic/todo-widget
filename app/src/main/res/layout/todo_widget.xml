@@ -36,11 +36,25 @@
             android:tint="#2196F3"/>
     </LinearLayout>
 
-    <!-- Content -->
+    <!-- List View -->
+    <ListView
+        android:id="@+id/todo_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="4dp"
+        android:scrollbars="vertical"
+        android:scrollbarStyle="outsideOverlay"
+        android:scrollingCache="true"/>
+        
+    <!-- Empty View -->
     <TextView
         android:id="@+id/empty_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
         android:text="@string/loading"
         android:textColor="#000000"
         android:textSize="14sp"
@@ -53,5 +67,6 @@
         android:layout_height="wrap_content"
         android:textSize="10sp"
         android:textColor="#757575"
-        android:padding="4dp"/>
+        android:padding="4dp"
+        android:background="#FFFFFF"/>
 </LinearLayout>

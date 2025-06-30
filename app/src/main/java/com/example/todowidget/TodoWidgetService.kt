@@ -6,11 +6,13 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import com.example.todowidget.model.Todo
 import com.example.todowidget.repository.TodoRepository
 import kotlinx.coroutines.*
+import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -28,7 +30,6 @@ class TodoWidgetService : RemoteViewsService() {
         
         return TodoRemoteViewsFactory(
             applicationContext,
-            intent,
             TodoRepository.getInstance(applicationContext),
             appWidgetId
         )
@@ -45,7 +46,6 @@ class TodoWidgetService : RemoteViewsService() {
  */
 class TodoRemoteViewsFactory(
     private val context: Context,
-    intent: Intent,
     private val repository: TodoRepository,
     private val appWidgetId: Int
 ) : RemoteViewsService.RemoteViewsFactory {
@@ -74,9 +74,19 @@ class TodoRemoteViewsFactory(
                     }
                     
                     result.onSuccess { todoList ->
-                        todos = todoList
+                        // Sort todos by due date (nulls last)
+                        todos = todoList.sortedWith(compareBy<Todo> { 
+                            it.dueDate?.let { dateStr ->
+                                try {
+                                    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateStr)?.time
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            } ?: Long.MAX_VALUE 
+                        }.thenBy { it.title }) // Secondary sort by title for same dates
+                        
                         error = null
-                        Log.d(TAG, "Successfully loaded ${todoList.size} todos")
+                        Log.d(TAG, "Successfully loaded and sorted ${todoList.size} todos")
                     }.onFailure { e ->
                         todos = emptyList()
                         error = e
@@ -107,36 +117,54 @@ class TodoRemoteViewsFactory(
     }
     
     override fun getViewAt(position: Int): RemoteViews {
-        Log.d(TAG, "getViewAt position: $position")
-        
-        val remoteView = RemoteViews(context.packageName, R.layout.todo_item)
+        Log.d(TAG, "getViewAt: $position")
         
         if (position < 0 || position >= todos.size) {
-            return remoteView
+            Log.e(TAG, "Invalid position: $position, size: ${todos.size}")
+            // Return a default view with an error message
+            val rv = RemoteViews(context.packageName, android.R.layout.simple_list_item_1)
+            rv.setTextViewText(android.R.id.text1, "Error loading item")
+            return rv
         }
         
         val todo = todos[position]
+        Log.d(TAG, "Creating view for todo: ${todo.id} - ${todo.title}")
         
-        // Set the todo text
-        remoteView.setTextViewText(R.id.todo_text, todo.title)
+        // Format the todo text with bullet point
+        val todoText = "• ${todo.title}"
         
-        // Set the completion status
-        remoteView.setImageViewResource(
-            R.id.checkbox,
-            if (todo.completed) R.drawable.ic_check_circle_24dp
-            else R.drawable.ic_radio_button_unchecked_24dp
-        )
+        // Format the due date if available
+        val outputFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+        val dueDateStr = todo.dueDate?.let { dateStr ->
+            try {
+                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateStr)
+                date?.let { outputFormat.format(it) } ?: ""
+            } catch (e: Exception) {
+                Log.e(TAG, "Error formatting date: $dateStr", e)
+                ""
+            }
+        } ?: ""
         
-        // Set the click intent for the item
-        val fillInIntent = Intent().apply {
-            // You can add extras to the intent if needed
-            // For example, to open a specific todo when clicked:
-            // putExtra("todo_id", todo.id)
+        val rv = RemoteViews(context.packageName, R.layout.todo_list_item)
+        rv.setTextViewText(R.id.todo_text, todoText)
+        
+        // Set the due date text if available
+        if (dueDateStr.isNotEmpty()) {
+            rv.setTextViewText(R.id.due_date_text, dueDateStr)
+            rv.setViewVisibility(R.id.due_date_text, View.VISIBLE)
+        } else {
+            rv.setViewVisibility(R.id.due_date_text, View.GONE)
         }
         
-        remoteView.setOnClickFillInIntent(R.id.todo_item_container, fillInIntent)
+        // Set click intent
+        val fillInIntent = Intent().apply {
+            putExtra("todo_id", todo.id)
+        }
         
-        return remoteView
+        // Set the fill-in intent
+        rv.setOnClickFillInIntent(R.id.todo_text, fillInIntent)
+        
+        return rv
     }
     
     override fun getLoadingView(): RemoteViews? {
@@ -152,11 +180,9 @@ class TodoRemoteViewsFactory(
         return if (position < 0 || position >= todos.size) {
             position.toLong()
         } else {
-            todos[position].id?.toLong() ?: position.toLong()
+            todos[position].id.hashCode().toLong()
         }
     }
     
-    override fun hasStableIds(): Boolean {
-        return true
-    }
+    override fun hasStableIds(): Boolean = true
 }

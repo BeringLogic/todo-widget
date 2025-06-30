@@ -11,6 +11,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
+import android.view.View
 import android.widget.RemoteViews
 import androidx.work.*
 import com.example.todowidget.model.Todo
@@ -81,9 +82,9 @@ class TodoWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.empty_view, context.getString(R.string.loading))
             views.setTextViewText(R.id.status_text, "Loading...")
             
-            // Set up click on the entire widget to refresh
-            val refreshIntent = Intent(context, TodoWidgetProvider::class.java).apply {
-                action = ACTION_UPDATE_WIDGET
+            // Set up the refresh button to trigger an update
+            Intent(context, TodoWidgetProvider::class.java).apply {
+                action = ACTION_REFRESH
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             }
             
@@ -170,23 +171,56 @@ class TodoWidgetProvider : AppWidgetProvider() {
                     sortedTodos
                 }
                 
-                // Format the todo list with due dates
-                val outputFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
-                val todoText = todosToShow.joinToString("\n") { todo ->
-                    val dueDateStr = todo.dueDate?.let { dateStr ->
-                        try {
-                            val date = dateFormat.parse(dateStr)
-                            date?.let { " (${outputFormat.format(it)})" } ?: ""
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error formatting date: $dateStr", e)
-                            ""
+                // Set up the list view
+                try {
+                    // Set up the intent to point to the RemoteViewsService
+                    val intent = Intent(context, TodoWidgetService::class.java)
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                    
+                    // Bind the remote adapter to the ListView
+                    views.setRemoteAdapter(R.id.todo_list, intent)
+                    
+                    // Set the empty view to be displayed when the list is empty
+                    views.setEmptyView(R.id.todo_list, R.id.empty_view)
+                    
+                    if (todosToShow.isNotEmpty()) {
+                        // Show the list and hide the empty view
+                        views.setViewVisibility(R.id.todo_list, View.VISIBLE)
+                        views.setViewVisibility(R.id.empty_view, View.GONE)
+                    } else {
+                        // No todos to show, display the empty view
+                        views.setTextViewText(R.id.empty_view, context.getString(R.string.no_tasks_this_week))
+                        views.setViewVisibility(R.id.todo_list, View.GONE)
+                        views.setViewVisibility(R.id.empty_view, View.VISIBLE)
+                    }
+                    
+                    // Notify the widget that the data has changed
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.todo_list)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error setting up ListView", e)
+                    // Fallback to text view if there's an error
+                    val todoText = if (todosToShow.isNotEmpty()) {
+                        val outputFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+                        todosToShow.joinToString("\n") { todo ->
+                            val dueDateStr = todo.dueDate?.let { dateStr ->
+                                try {
+                                    val date = dateFormat.parse(dateStr)
+                                    date?.let { " (${outputFormat.format(it)})" } ?: ""
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error formatting date: $dateStr", e)
+                                    ""
+                                }
+                            } ?: ""
+                            "• ${todo.title}$dueDateStr"
                         }
-                    } ?: ""
-                    "• ${todo.title}$dueDateStr"
+                    } else {
+                        context.getString(R.string.no_tasks_this_week)
+                    }
+                    
+                    views.setTextViewText(R.id.empty_view, todoText)
+                    views.setViewVisibility(R.id.todo_list, View.GONE)
+                    views.setViewVisibility(R.id.empty_view, View.VISIBLE)
                 }
-                
-                Log.d(TAG, "Setting todo text with ${todosToShow.size} items")
-                views.setTextViewText(R.id.empty_view, todoText)
             }
             
             // Update the status text with last updated time
@@ -258,35 +292,49 @@ class TodoWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
         
         when (intent.action) {
-            ACTION_UPDATE_WIDGET, ACTION_REFRESH -> {
-                val appWidgetId = intent.getIntExtra(
-                    AppWidgetManager.EXTRA_APPWIDGET_ID,
-                    AppWidgetManager.INVALID_APPWIDGET_ID
+            ACTION_REFRESH -> {
+                Log.d(TAG, "Received refresh action")
+                
+                // Invalidate the cache to force a refresh
+                TodoRepository.getInstance(context).invalidateCache()
+                
+                // Get all widget IDs
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                    ComponentName(context, TodoWidgetProvider::class.java)
                 )
                 
-                if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                    // Force refresh from network if it's a manual refresh
-                    if (intent.action == ACTION_REFRESH) {
-                        val appWidgetManager = AppWidgetManager.getInstance(context)
+                if (appWidgetIds.isNotEmpty()) {
+                    // Show loading state immediately
+                    for (appWidgetId in appWidgetIds) {
                         val views = RemoteViews(context.packageName, R.layout.todo_widget)
-                        views.setTextViewText(R.id.status_text, context.getString(R.string.refreshing))
+                        views.setTextViewText(R.id.empty_view, context.getString(R.string.loading))
+                        views.setTextViewText(R.id.status_text, "Refreshing...")
                         appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
-                        
-                        // Invalidate the cache and force a refresh
-                        TodoRepository.getInstance(context).invalidateCache()
                     }
                     
-                    // Update the widget
-                    updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId)
-                } else {
-                    // Fallback: Update all widgets if we couldn't get the ID
-                    val appWidgetManager = AppWidgetManager.getInstance(context)
-                    val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                    // Enqueue the update work
+                    enqueueImmediateUpdate(context)
+                    
+                    // Notify the app widget that the data has changed
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.todo_list)
+                    
+                    // Force an update
+                    onUpdate(context, appWidgetManager, appWidgetIds)
+                }
+            }
+            AppWidgetManager.ACTION_APPWIDGET_UPDATE -> {
+                Log.d(TAG, "Received widget update action")
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val appWidgetIds = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS) 
+                    ?: appWidgetManager.getAppWidgetIds(
                         ComponentName(context, TodoWidgetProvider::class.java)
                     )
-                    if (appWidgetIds.isNotEmpty()) {
-                        onUpdate(context, appWidgetManager, appWidgetIds)
-                    }
+                
+                if (appWidgetIds.isNotEmpty()) {
+                    // Notify the app widget that the data has changed
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.todo_list)
+                    onUpdate(context, appWidgetManager, appWidgetIds)
                 }
             }
         }
