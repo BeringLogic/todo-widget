@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/this_week_tasks"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#2196F3"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:drawablePadding="8dp"
+        android:drawableLeft="@drawable/ic_task"
+        android:drawableTint="#2196F3" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#757575"
+        android:layout_marginVertical="4dp"/>
+
+    <TextView
+        android:id="@+id/todo_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#000000"
+        android:lineSpacingExtra="4dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:textColor="#757575"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:paddingTop="4dp"/>
+
+</LinearLayout>

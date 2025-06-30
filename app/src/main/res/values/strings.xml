@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Info -->
+    <string name="app_name">Todo Widget</string>
+    <string name="app_widget_description">Displays your todo list with automatic updates</string>
+    
+    <!-- Task Display -->
+    <string name="this_week_tasks">This Week\'s Tasks</string>
+    <string name="no_tasks_this_week">No tasks due this week</string>
+    <string name="tasks_count">%1$d tasks</string>
+    <string name="due_date">Due %1$s</string>
+    
+    <!-- Error Messages -->
+    <string name="error_network_unavailable">No internet connection. Please check your network settings.</string>
+    <string name="error_fetching_todos">Error loading tasks: %1$s</string>
+    <string name="error_loading_tasks">Error loading tasks</string>
+    <string name="error_loading_todos">Error loading todos: %1$s</string>
+    <string name="error_retry">Tap to retry</string>
+    <string name="last_updated">Updated: %1$s</string>
+    <string name="last_updated_error">Error: %1$s</string>
+    <string name="todo_status">Todo status</string>
+    <string name="loading">Loading tasks…</string>
+    <string name="refresh">Refresh</string>
+</resources>

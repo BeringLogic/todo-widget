@@ -1,0 +1,7 @@
+
+adb install -r ./app/build/outputs/apk/debug/app-debug.apk
+
+adb logcat -s TodoWidget:V UpdateWorker:V *:E
+
+adb shell am broadcast -a com.example.todowidget.ACTION_UPDATE_WIDGET
+

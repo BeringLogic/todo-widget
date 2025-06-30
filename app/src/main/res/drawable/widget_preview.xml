@@ -1,0 +1,72 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="110dp"
+    android:height="250dp"
+    android:viewportWidth="110"
+    android:viewportHeight="250">
+    
+    <!-- Background -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M0,0h110v250h-110z" />
+        
+    <!-- Header -->
+    <path
+        android:fillColor="#F8F9FA"
+        android:pathData="M0,0h110v50h-110z" />
+        
+    <!-- Title -->
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M15,15h60v6h-60z" />
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M15,25h80v4h-80z" />
+        
+    <!-- Divider -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M10,40h90v1h-90z" />
+        
+    <!-- Project items -->
+    <path
+        android:fillColor="#F1F3F4"
+        android:pathData="M10,50h90v40h-90z" />
+    <path
+        android:fillColor="#E8F0FE"
+        android:pathData="M15,55h50v6h-50z" />
+    <path
+        android:fillColor="#D2E3FC"
+        android:pathData="M15,65h30v4h-30z" />
+    <path
+        android:fillColor="#D2E3FC"
+        android:pathData="M15,75h40v3h-40z" />
+        
+    <!-- Divider -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M10,100h90v1h-90z" />
+        
+    <!-- Second project -->
+    <path
+        android:fillColor="#F1F3F4"
+        android:pathData="M10,110h90v40h-90z" />
+    <path
+        android:fillColor="#E8F0FE"
+        android:pathData="M15,115h50v6h-50z" />
+    <path
+        android:fillColor="#D2E3FC"
+        android:pathData="M15,125h30v4h-30z" />
+    <path
+        android:fillColor="#D2E3FC"
+        android:pathData="M15,135h40v3h-40z" />
+        
+    <!-- Shadow -->
+    <path
+        android:fillColor="#1F000000"
+        android:pathData="M0,0h110v1h-110z"
+        android:alpha="0.1" />
+    <path
+        android:fillColor="#1F000000"
+        android:pathData="M0,0h1v250h-1z"
+        android:alpha="0.1" />
+</vector>
