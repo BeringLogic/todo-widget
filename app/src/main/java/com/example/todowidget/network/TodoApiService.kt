@@ -21,7 +21,7 @@ interface TodoApiService {
         
         fun create(): TodoApiService {
             val logger = HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BASIC
+                level = HttpLoggingInterceptor.Level.BODY
             }
             
             val client = OkHttpClient.Builder()
@@ -34,13 +34,14 @@ interface TodoApiService {
             val moshi = Moshi.Builder()
                 .add(KotlinJsonAdapterFactory())
                 .build()
-                
-            return Retrofit.Builder()
+            
+            val retrofit = Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .client(client)
                 .addConverterFactory(MoshiConverterFactory.create(moshi))
                 .build()
-                .create(TodoApiService::class.java)
+                
+            return retrofit.create(TodoApiService::class.java)
         }
     }
 }

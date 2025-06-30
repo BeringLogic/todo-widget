@@ -128,18 +128,20 @@ class TodoWidgetProvider : AppWidgetProvider() {
             } else {
                 Log.d(TAG, "Processing ${todos.size} todos")
                 
-                // Sort todos by due date (earliest first)
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-                val sortedTodos = todos.sortedBy { todo ->
+                // Sort todos by due date (earliest first), with todos without due dates at the end
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+                val sortedTodos = todos.sortedWith(compareBy<Todo> { todo ->
                     todo.dueDate?.let { dueDateStr ->
                         try {
-                            dateFormat.parse(dueDateStr)?.time ?: 0L
+                            dateFormat.parse(dueDateStr)?.time ?: Long.MAX_VALUE - 1
                         } catch (e: Exception) {
                             Log.e(TAG, "Error parsing date: $dueDateStr", e)
-                            Long.MAX_VALUE
+                            Long.MAX_VALUE - 1
                         }
                     } ?: Long.MAX_VALUE
-                }
+                })
                 
                 // Limit the number of todos to display to avoid performance issues
                 val maxTodos = 10
@@ -151,12 +153,11 @@ class TodoWidgetProvider : AppWidgetProvider() {
                 }
                 
                 // Format the todo list with due dates
-                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
                 val outputFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
                 val todoText = todosToShow.joinToString("\n") { todo ->
                     val dueDateStr = todo.dueDate?.let { dateStr ->
                         try {
-                            val date = inputFormat.parse(dateStr)
+                            val date = dateFormat.parse(dateStr)
                             date?.let { " (${outputFormat.format(it)})" } ?: ""
                         } catch (e: Exception) {
                             Log.e(TAG, "Error formatting date: $dateStr", e)

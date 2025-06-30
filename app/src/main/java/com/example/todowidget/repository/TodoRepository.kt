@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import java.net.UnknownHostException
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.TimeZone
 import java.util.Calendar
 
 class TodoRepository private constructor(
@@ -17,7 +18,9 @@ class TodoRepository private constructor(
 ) {
     private val apiService = TodoApiService.create()
     
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
     
     suspend fun getTodos(): Result<List<Todo>> = withContext(Dispatchers.IO) {
         return@withContext try {
@@ -30,9 +33,22 @@ class TodoRepository private constructor(
                 Log.d(TAG, "Todo[$index]: '${todo.title}' due: ${todo.dueDate ?: "No due date"}")
             }
             
-            // Filter todos to only include those with due dates in the past or this week
+            // Filter to only include incomplete tasks with due dates in the past or this week
             val filteredTodos = todos.filter { todo ->
-                todo.dueDate?.let { dueDateStr ->
+                // Skip completed tasks
+                if (todo.completed) {
+                    Log.d(TAG, "Excluding completed todo: '${todo.title}'")
+                    return@filter false
+                }
+
+                // Skip todos without due dates
+                if (todo.dueDate == null) {
+                    Log.d(TAG, "Excluding todo without due date: '${todo.title}'")
+                    return@filter false
+                }
+
+                // Process todos with due dates
+                todo.dueDate.let { dueDateStr ->
                     try {
                         val dueDate = dateFormat.parse(dueDateStr) ?: return@filter false
                         val calendar = Calendar.getInstance()
@@ -62,9 +78,6 @@ class TodoRepository private constructor(
                         Log.e(TAG, "Error parsing date: '$dueDateStr' for todo '${todo.title}'", e)
                         false
                     }
-                } ?: run {
-                    Log.d(TAG, "Excluding todo '${todo.title}' - no due date")
-                    false // Exclude todos without due dates
                 }
             }
             

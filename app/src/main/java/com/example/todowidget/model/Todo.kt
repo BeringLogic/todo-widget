@@ -1,19 +1,12 @@
 package com.example.todowidget.model
 
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
-@JsonClass(generateAdapter = false)
+@JsonClass(generateAdapter = true)
 data class Todo(
     val id: String,
     val title: String,
     val completed: Boolean,
-    val dueDate: String? = null
+    @Json(name = "due_date") val dueDate: String? = null
 )
-
-class TodoJsonAdapter {
-    companion object {
-        fun create(): com.squareup.moshi.JsonAdapter<Todo> {
-            return com.squareup.moshi.Moshi.Builder().build().adapter(Todo::class.java)
-        }
-    }
-}
