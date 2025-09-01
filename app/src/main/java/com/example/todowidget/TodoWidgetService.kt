@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -118,15 +119,6 @@ class TodoRemoteViewsFactory(
     
     override fun getViewAt(position: Int): RemoteViews {
         Log.d(TAG, "getViewAt: $position")
-        
-        if (position < 0 || position >= todos.size) {
-            Log.e(TAG, "Invalid position: $position, size: ${todos.size}")
-            // Return a default view with an error message
-            val rv = RemoteViews(context.packageName, android.R.layout.simple_list_item_1)
-            rv.setTextViewText(android.R.id.text1, "Error loading item")
-            return rv
-        }
-        
         val todo = todos[position]
         Log.d(TAG, "Creating view for todo: ${todo.id} - ${todo.title}")
         
@@ -135,34 +127,88 @@ class TodoRemoteViewsFactory(
         
         // Format the due date if available
         val outputFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
-        val dueDateStr = todo.dueDate?.let { dateStr ->
-            try {
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateStr)
-                date?.let { outputFormat.format(it) } ?: ""
-            } catch (e: Exception) {
-                Log.e(TAG, "Error formatting date: $dateStr", e)
-                ""
-            }
-        } ?: ""
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
         
         val rv = RemoteViews(context.packageName, R.layout.todo_list_item)
         rv.setTextViewText(R.id.todo_text, todoText)
         
         // Set the due date text if available
-        if (dueDateStr.isNotEmpty()) {
-            rv.setTextViewText(R.id.due_date_text, dueDateStr)
-            rv.setViewVisibility(R.id.due_date_text, View.VISIBLE)
-        } else {
+        todo.dueDate?.let { dueDateStr ->
+            try {
+                // Parse the date and set the timezone to UTC for consistency
+                dateFormat.timeZone = TimeZone.getTimeZone("UTC")
+                val dueDate = dateFormat.parse(dueDateStr) ?: return@let
+                
+                // Format the date for display using the device's local timezone
+                outputFormat.timeZone = TimeZone.getDefault()
+                val formattedDate = outputFormat.format(dueDate)
+                
+                // Create a calendar instance for the due date in the local timezone
+                val dueCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                    time = dueDate
+                    // Normalize to start of day in UTC
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                
+                // Get current date in UTC
+                val todayCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                    // Normalize to start of day in UTC
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                
+                // Get the time in milliseconds for comparison
+                val dueTime = dueCalendar.timeInMillis
+                val todayTime = todayCalendar.timeInMillis
+                
+                // Calculate the difference in days
+                val dayInMillis = 24 * 60 * 60 * 1000
+                val daysDifference = (dueTime - todayTime) / dayInMillis
+                
+                // Set color based on due date
+                val textColor = when {
+                    // Past due
+                    daysDifference < 0 -> "#FF0000" // Red
+                    // Due today
+                    daysDifference == 0L -> "#FFA500" // Orange
+                    // Future date
+                    else -> "#0000FF" // Blue
+                }
+                
+                val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+                val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+                
+                // Set the date in the due_date_text view
+                rv.setTextViewText(R.id.due_date_text, dateFormat.format(dueDate))
+                rv.setTextColor(R.id.due_date_text, Color.parseColor(textColor))
+                rv.setViewVisibility(R.id.due_date_text, View.VISIBLE)
+                
+                // Set the time in the due_time_text view
+                rv.setTextViewText(R.id.due_time_text, timeFormat.format(dueDate))
+                rv.setTextColor(R.id.due_time_text, Color.parseColor(textColor))
+                rv.setViewVisibility(R.id.due_time_text, View.VISIBLE)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error formatting date: $dueDateStr", e)
+                rv.setViewVisibility(R.id.due_date_text, View.GONE)
+                rv.setViewVisibility(R.id.due_time_text, View.GONE)
+            }
+        } ?: run {
             rv.setViewVisibility(R.id.due_date_text, View.GONE)
+            rv.setViewVisibility(R.id.due_time_text, View.GONE)
         }
         
         // Set click intent
         val fillInIntent = Intent().apply {
             putExtra("todo_id", todo.id)
         }
-        
-        // Set the fill-in intent
-        rv.setOnClickFillInIntent(R.id.todo_text, fillInIntent)
+        rv.setOnClickFillInIntent(R.id.todo_item_container, fillInIntent)
         
         return rv
     }

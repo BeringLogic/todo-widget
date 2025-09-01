@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingVertical="0dp"
+    android:paddingVertical="8dp"
     android:paddingHorizontal="4dp">
 
     <TextView
@@ -22,30 +22,14 @@
         android:orientation="horizontal"
         android:layout_marginTop="4dp">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/due_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/due_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="8sp"
-                android:textColor="#5F6368"
-                android:drawableStart="@drawable/ic_calendar"
-                android:drawablePadding="4dp"/>
-
-            <TextView
-                android:id="@+id/due_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="11sp"
-                android:textColor="#5F6368"
-                android:paddingStart="20dp"
-                android:paddingTop="2dp"/>
-
-        </LinearLayout>
+            android:textSize="12sp"
+            android:textColor="#5F6368"
+            android:drawableStart="@drawable/ic_calendar"
+            android:drawablePadding="4dp"/>
 
         <View
             android:layout_width="1dp"
